@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Button } from "react-native";
-import NumberContainer from '../components/NumberContainer';
-import Card from '../components/Card';
+import React, { useState, useRef, useEffect } from "react";
+import { View, Text, StyleSheet, Button, Alert } from "react-native";
+import NumberContainer from "../components/NumberContainer";
+import Card from "../components/Card";
 import { apisAreAvailable } from "expo";
+import {AppLoading} from 'expo';
 
 const generateRandomBetween = (min, max, exclude) => {
   min = Math.ceil(min);
@@ -19,33 +20,75 @@ const GameScreen = (props) => {
   const [currentGuess, setCurrentGuess] = useState(
     generateRandomBetween(1, 100, props.userChoice)
   );
+  const [rounds, setRounds] = useState(0);
+  const currentLow = useRef(1);
+  const currentHigh = useRef(100);
+
+  const { userChoice, onGameOver } = props;
+
+  useEffect(() => {
+    if (currentGuess === userChoice) {
+      onGameOver(rounds);
+    }
+  }, [currentGuess, userChoice, onGameOver]);
+
+  const nexGuessHandler = (direction) => {
+    if (
+      (direction === "lower" && currentGuess < props.userChoice) ||
+      (direction === "greater" && currentGuess > props.userChoice)
+    ) {
+      Alert.alert("Don't lie!", "You know that this is wrong...", [
+        { text: "Sorry!", style: "cancel" },
+      ]);
+      return;
+    }
+    if (direction === "lower") {
+      currentHigh.current = currentGuess;
+    } else {
+      currentLow.current = currentGuess;
+    }
+    const nextNumber = generateRandomBetween(
+      currentLow.current,
+      currentHigh.current,
+      currentGuess
+    );
+    console.log(currentLow.current);
+    console.log(currentHigh.current);
+    setCurrentGuess(nextNumber);
+    setRounds((curRounds) => curRounds + 1);
+  };
 
   return (
-      <View style={styles.screen}>
-          <Text>Opponent's Guess</Text>
-          <NumberContainer>{currentGuess}</NumberContainer>
-          <Card style = {styles.buttonContainer}>
-              <Button title="LOWER" onPress={() => {}}></Button>
-              <Button title="GREATER" onPress={() => {}}></Button>
-          </Card>
-      </View>
+    <View style={styles.screen}>
+      <Text>Opponent's Guess</Text>
+      <NumberContainer>{currentGuess}</NumberContainer>
+      <Card style={styles.buttonContainer}>
+        <Button
+          title="LOWER"
+          onPress={nexGuessHandler.bind(this, "lower")}
+        ></Button>
+        <Button
+          title="GREATER"
+          onPress={nexGuessHandler.bind(this, "greater")}
+        ></Button>
+      </Card>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-    screen: {
-        flex: 1,
-        padding: 10,
-        alignItems: 'center',
-
-    },
-    buttonContainer:{
-        flexDirection:'row',
-        justifyContent: 'space-around',
-        marginTop: 20,
-        width: 300,
-        maxWidth: '80%',
-    }
+  screen: {
+    flex: 1,
+    padding: 10,
+    alignItems: "center",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 20,
+    width: 300,
+    maxWidth: "80%",
+  },
 });
 
 export default GameScreen;
